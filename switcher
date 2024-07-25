@@ -1,0 +1,32 @@
+#!/bin/bash
+
+if [ -z "$GITHUB_USERNAME" ] || [ -z "$SSH_KEY_PATH" ]; then
+    echo "Error: GITHUB_USERNAME and SSH_KEY_PATH environment variables must be set."
+    echo "Usage:"
+    echo "  export GITHUB_USERNAME=your_github_username"
+    echo "  export SSH_KEY_PATH=/path/to/your/ssh/key"
+    exit 1
+fi
+
+check_github_key() {
+    ssh -T git@github.com 2>&1 | grep -q "$GITHUB_USERNAME"
+    return $?
+}
+
+switch_github_key() {
+    eval "$(ssh-agent -s)"
+    ssh-add "$SSH_KEY_PATH"
+}
+
+echo "Checking current GitHub SSH key..."
+if check_github_key; then
+    echo "Current key is already set to $GITHUB_USERNAME's account."
+else
+    echo "Switching to $GITHUB_USERNAME's GitHub SSH key..."
+    switch_github_key
+    if check_github_key; then
+        echo "Successfully switched to $GITHUB_USERNAME's GitHub SSH key."
+    else
+        echo "Failed to switch GitHub SSH key. Please check your configuration."
+    fi
+fi
