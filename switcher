@@ -5,6 +5,7 @@ if [ -z "$GITHUB_USERNAME" ] || [ -z "$SSH_KEY_PATH" ]; then
     echo "Usage:"
     echo "  export GITHUB_USERNAME=your_github_username"
     echo "  export SSH_KEY_PATH=/path/to/your/ssh/key"
+    echo "  github-ssh-key-switcher"
     exit 1
 fi
 
@@ -14,8 +15,16 @@ check_github_key() {
 }
 
 switch_github_key() {
-    eval "$(ssh-agent -s)"
+    if [ -z "$SSH_AUTH_SOCK" ]; then
+        eval "$(ssh-agent -s)"
+    fi
+
+    ssh-add -D
+
     ssh-add "$SSH_KEY_PATH"
+    
+    echo "Added key: $SSH_KEY_PATH"
+    ssh-add -l  # List added keys
 }
 
 echo "Checking current GitHub SSH key..."
@@ -28,5 +37,7 @@ else
         echo "Successfully switched to $GITHUB_USERNAME's GitHub SSH key."
     else
         echo "Failed to switch GitHub SSH key. Please check your configuration."
+        echo "Current SSH keys:"
+        ssh-add -l
     fi
 fi
